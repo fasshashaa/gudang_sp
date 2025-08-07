@@ -7,15 +7,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
+            padding: 0;
             background-color: #eef1f4;
         }
         .navbar {
-            background-color: #007BFF;
+            background-color: #6C89BD;
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -24,11 +24,17 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border-top: none; /* Pastikan tidak ada border di atas */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Memberikan bayangan agar terlihat 'mengambang' */
         }
         .navbar h1 {
             margin: 0;
             font-size: 1.5rem;
+            margin-left: 0;
+        }
+        .navbar img {
+            height: 50px;
+            margin-right: 0;
         }
         .navbar .search-form {
             display: flex;
@@ -62,6 +68,11 @@
         }
         .add-button i {
             margin-right: 8px;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .container {
             padding: 20px;
@@ -143,7 +154,7 @@
             border: none;
             border-radius: 10px;
             width: 90%;
-            max-width: 900px; /* Lebarkan modal untuk form horizontal */
+            max-width: 900px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             animation: slideIn 0.3s ease-out;
         }
@@ -160,18 +171,17 @@
             text-decoration: none;
             cursor: pointer;
         }
-        /* Style untuk form horizontal */
         .modal-content form { 
             margin-top: 20px; 
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Atur menjadi 2 kolom */
-            gap: 20px; /* Jarak antar item form */
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
         }
         .modal-content form > div {
-            margin-bottom: 0; /* Hapus margin bawah default */
+            margin-bottom: 0;
         }
         .modal-content form > button {
-            grid-column: 1 / -1; /* Tombol submit menempati seluruh lebar grid */
+            grid-column: 1 / -1;
             margin-top: 10px;
         }
         
@@ -241,9 +251,12 @@
 </head>
 <body>
     <nav class="navbar">
-        <h1>Gudang Sparepart</h1>
+        <div class="logo-container">
+            <img src="{{ asset('images/nunggal.png') }}" alt="Logo Gudang SP" height="30">
+            <h1>Gudang Sparepart</h1>
+        </div>
         <form id="searchForm" class="search-form" action="#" method="GET">
-            <input type="text" id="searchInput" name="search" placeholder="Cari barang...">
+            <input type="text" id="searchInput" name="search" placeholder="Search...">
         </form>
         <button id="openModalBtn" class="add-button"><i class="fas fa-plus fa-sm"></i> Tambah</button>
     </nav>
@@ -343,10 +356,8 @@
         var editForm = document.getElementById("editBarangForm");
         var statusMessage = document.getElementById("statusMessage");
         var barangTableBody = document.getElementById("barang-table-body");
-        
         var searchInput = document.getElementById('searchInput');
 
-        // Toggle detail row when main row is clicked
         barangTableBody.addEventListener('click', function(event) {
             const row = event.target.closest('.main-row');
             if (row && !event.target.closest('.action-buttons')) {
@@ -361,10 +372,22 @@
             }
         });
 
-        // Live search logic
         searchInput.addEventListener('input', function() {
-            const searchValue = searchInput.value.toLowerCase();
+            const searchValue = searchInput.value.toLowerCase().trim();
             const rows = barangTableBody.querySelectorAll('.main-row');
+
+            if (searchValue === '') {
+                rows.forEach(row => {
+                    row.style.display = '';
+                    const detailRow = row.nextElementSibling;
+                    if (detailRow && detailRow.classList.contains('detail-row')) {
+                        detailRow.style.display = 'none';
+                    }
+                });
+                return;
+            }
+
+            const searchKeywords = searchValue.split(/\s+/).filter(Boolean);
 
             rows.forEach(row => {
                 const detailRow = row.nextElementSibling;
@@ -372,12 +395,18 @@
                 const machine = row.querySelector('.machine').innerText.toLowerCase();
                 const nameOfGood = row.querySelector('.name_of_good').innerText.toLowerCase();
                 const specification = row.querySelector('.specification').innerText.toLowerCase();
+                const box = row.querySelector('.box').innerText.toLowerCase();
                 const closing = row.querySelector('.closing').innerText.toLowerCase();
+                const combinedRowText = `${code} ${machine} ${nameOfGood} ${specification} ${box} ${closing}`;
 
-                if (code.includes(searchValue) || machine.includes(searchValue) || nameOfGood.includes(searchValue) || specification.includes(searchValue) || closing.includes(searchValue)) {
+                const allKeywordsMatch = searchKeywords.every(keyword => 
+                    combinedRowText.includes(keyword)
+                );
+
+                if (allKeywordsMatch) {
                     row.style.display = '';
                     if (detailRow && detailRow.classList.contains('detail-row')) {
-                        detailRow.style.display = row.style.display; // Ensure detail row visibility matches main row
+                        detailRow.style.display = 'none';
                     }
                 } else {
                     row.style.display = 'none';
