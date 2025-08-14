@@ -13,12 +13,39 @@ class BarangController extends Controller
     /**
      * Menampilkan daftar barang.
      */
-    public function index()
-    {
-        $barangs = Barang::with('detail')->get();
-        return view('barang.index', compact('barangs'));
+   // app/Http/Controllers/BarangController.php
+
+// ... (kode di atas tidak ada perubahan) ...
+
+public function index(Request $request)
+{
+    $query = Barang::query();
+
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where('code', 'like', "%{$search}%")
+              ->orWhere('machine', 'like', "%{$search}%")
+              ->orWhere('name_of_good', 'like', "%{$search}%")
+              ->orWhereHas('detail', function ($q) use ($search) {
+                  $q->where('specification', 'like', "%{$search}%")
+                    ->orWhere('box', 'like', "%{$search}%")
+                    ->orWhere('closing', 'like', "%{$search}%");
+              });
     }
 
+    $barangs = $query->with('detail')->paginate(10);
+
+    // Periksa apakah permintaan datang dari AJAX
+    if ($request->ajax()) {
+        return response()->json([
+            'barangs' => $barangs
+        ]);
+    }
+
+    return view('barang.index', compact('barangs'));
+}
+
+// ... (kode di bawah tidak ada perubahan) ...
     /**
      * Menyimpan data barang baru.
      */
@@ -70,8 +97,8 @@ class BarangController extends Controller
             'name_of_good' => 'required|max:255',
             'specification' => 'required|max:255',
             'box' => 'required|max:255',
-            'using_2024' => 'required|numeric',
-            'opening' => 'required|numeric',
+            'using_2024' => 'required|max:255',
+            'opening' => 'required|max:255',
             'received' => 'required|numeric',
             'used' => 'required|numeric',
             'closing' => 'required|numeric',
